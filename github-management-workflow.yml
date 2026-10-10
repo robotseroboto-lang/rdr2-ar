@@ -1,0 +1,50 @@
+# Prepared only. Activate under .github/workflows after owner approval of write access.
+name: RDR2 Arabic — Owner management
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: News publication or Arabic translation overrides
+        required: true
+        type: choice
+        options: [news, translations]
+      payload:
+        description: Validated JSON prepared by the management page
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: rdr2-owner-management
+  cancel-in-progress: false
+jobs:
+  edit:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Validate and back up the requested edit
+        run: node github-management.mjs
+        env:
+          MANAGEMENT_ACTION: ${{ inputs.operation }}
+          MANAGEMENT_PAYLOAD: ${{ inputs.payload }}
+      - name: Commit preserved content changes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add managed-news.json managed-translations.json managed-content/backups
+          git commit -m 'Publish owner-approved content with backup'
+          git push
+  publish:
+    needs: edit
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
