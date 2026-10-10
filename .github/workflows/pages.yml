@@ -1,0 +1,71 @@
+name: RDR2 Arabic — Pages and daily data
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '11,26,41,56 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: rdr2-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v7
+      - name: Restore complete original site package
+        working-directory: .
+        run: |
+          python - <<'PYTHON'
+          import pathlib, hashlib, io, zipfile
+          parts = sorted(pathlib.Path('.').glob('site-package.part-*'))
+          blob = b''.join(p.read_bytes() for p in parts)
+          assert hashlib.sha256(blob).hexdigest() == "9e600824aeac34b1660100bea1594c755b85b7b96967d8820a660c4e7363dae2", 'Package checksum mismatch'
+          with zipfile.ZipFile(io.BytesIO(blob)) as archive:
+              for name in archive.namelist():
+                  assert not pathlib.PurePosixPath(name).is_absolute() and '..' not in pathlib.PurePosixPath(name).parts
+              archive.extractall('site')
+          PYTHON
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Restore source and translation cache
+        uses: actions/cache@v6
+        with:
+          path: site/.pages-cache
+          key: rdr2-data-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: rdr2-data-v1-
+      - name: Build original interface
+        run: node server/pages-prepare.mjs
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+      - name: Refresh validated daily data and news
+        run: node server/pages-export.mjs
+      - name: Verify published routes and resources
+        run: node server/pages-verify.mjs
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/.pages-site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4
