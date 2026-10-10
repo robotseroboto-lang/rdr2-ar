@@ -1,0 +1,22 @@
+# Prepared deployment only. Creating this paid service requires owner approval.
+services:
+  - type: web
+    name: rdr2-ar-full
+    runtime: node
+    plan: starter
+    buildCommand: python3 render-build.py
+    startCommand: cd runtime && node server/index.mjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DATA_DIR
+        value: /var/data/rdr2
+      - key: ADMIN_PASSWORD
+        sync: false
+    disk:
+      name: rdr2-persistent-data
+      mountPath: /var/data
+      sizeGB: 1
