@@ -3,8 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
   schedule:
-    - cron: '11,26,41,56 * * * *'
+    - cron: '10,25,40,55 * * * *'
 permissions:
   contents: read
 concurrency:
@@ -45,10 +46,32 @@ jobs:
           path: site/.pages-cache
           key: rdr2-data-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: rdr2-data-v1-
+      - name: Restore missing original source data without replacing originals
+        working-directory: .
+        run: |
+          python - <<'PYTHON'
+          import pathlib, zipfile, hashlib, shutil
+          package=pathlib.Path('source-restoration-20261010.zip')
+          expected=pathlib.Path('source-restoration.sha256').read_text().split()[0]
+          assert hashlib.sha256(package.read_bytes()).hexdigest()==expected
+          with zipfile.ZipFile(package) as archive:
+              for name in archive.namelist():
+                  assert not pathlib.PurePosixPath(name).is_absolute() and '..' not in pathlib.PurePosixPath(name).parts
+                  target=pathlib.Path('site')/name
+                  if target.exists():
+                      backup=pathlib.Path('site/migration-backups/before-source-restoration')/name
+                      backup.parent.mkdir(parents=True,exist_ok=True)
+                      shutil.copy2(target,backup)
+              archive.extractall('site')
+          PYTHON
       - name: Apply preserved path corrections
         run: |
-          cp ../pages-prepare-v2.mjs server/pages-prepare.mjs
+          cp ../pages-prepare-v3.mjs server/pages-prepare.mjs
           cp ../pages-verify.mjs server/pages-verify.mjs
+          cp ../translation-bot-v2.mjs server/translation-bot.mjs
+          cp ../translation-full-text.test.mjs server/translation-full-text.test.mjs
+      - name: Verify full-text translation batching
+        run: node --test server/translation-bot.test.mjs server/translation-full-text.test.mjs
       - name: Build original interface
         run: node server/pages-prepare.mjs
         env:
