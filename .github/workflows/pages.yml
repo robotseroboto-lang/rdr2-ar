@@ -45,6 +45,10 @@ jobs:
           path: site/.pages-cache
           key: rdr2-data-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: rdr2-data-v1-
+      - name: Apply preserved path corrections
+        run: |
+          cp ../pages-prepare.mjs server/pages-prepare.mjs
+          cp ../pages-verify.mjs server/pages-verify.mjs
       - name: Build original interface
         run: node server/pages-prepare.mjs
         env:
