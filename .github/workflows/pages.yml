@@ -47,7 +47,7 @@ jobs:
           restore-keys: rdr2-data-v1-
       - name: Apply preserved path corrections
         run: |
-          cp ../pages-prepare.mjs server/pages-prepare.mjs
+          cp ../pages-prepare-v2.mjs server/pages-prepare.mjs
           cp ../pages-verify.mjs server/pages-verify.mjs
       - name: Build original interface
         run: node server/pages-prepare.mjs
