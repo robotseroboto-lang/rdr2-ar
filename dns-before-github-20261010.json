@@ -1,0 +1,14 @@
+{
+  "domain": "rdr2.giize.com",
+  "provider": "Dynu",
+  "capturedAt": "2026-10-10",
+  "purpose": "Preserve the original configuration before the owner-authorized migration to GitHub Pages",
+  "records": [
+    {"type":"A","hostname":"rdr2.giize.com","value":"185.27.134.112","ttl":120},
+    {"type":"A","hostname":"*.rdr2.giize.com","value":"185.27.134.112","ttl":120,"wildcardEnabled":true},
+    {"type":"AAAA","hostname":"rdr2.giize.com","value":"","ttl":120},
+    {"type":"AAAA","hostname":"*.rdr2.giize.com","value":"","ttl":120},
+    {"type":"CNAME","hostname":"_acme-challenge.rdr2.giize.com","value":"68490070-2054-4e40-8242-5572ee872abb.acmedns.infinityfree.net","ttl":120,"enabled":true}
+  ],
+  "restore": "Restore the hostname IPv4 to 185.27.134.112 and the enabled IPv4 wildcard; preserve all existing source files on InfinityFree."
+}
